@@ -1,0 +1,26 @@
+name: "Discord Notify"
+description: "CI 結果を Discord に通知する"
+inputs:
+  message:
+    description: "通知メッセージのプレフィックス"
+    required: false
+    default: "✅ CI Passed! @saya Please review:"
+runs:
+  using: "composite"
+  steps:
+    - name: Notify Discord
+      shell: bash
+      env:
+        DISCORD_WEBHOOK: ${{ env.DISCORD_WEBHOOK }}
+      run: |
+        if [ -n "$DISCORD_WEBHOOK" ]; then
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          if [ -n "$PR_URL" ]; then
+            MSG="${{ inputs.message }} ${PR_URL}"
+          else
+            MSG="${{ inputs.message }} https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+          curl -fsSL -H "Content-Type: application/json" \
+            -d "{\"content\": \"${MSG}\"}" \
+            "$DISCORD_WEBHOOK"
+        fi
